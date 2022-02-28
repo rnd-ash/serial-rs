@@ -1,4 +1,4 @@
-use std::ptr;
+use std::{ptr, io::ErrorKind};
 use winapi::{
     shared::{minwindef::DWORD, ntdef::MAKELANGID},
     um::{
@@ -25,7 +25,7 @@ impl From<SerialError> for std::io::Error {
     fn from(e: SerialError) -> Self {
         match e {
             SerialError::IoError(i) => i,
-            SerialError::OsError { .. } => todo!(),
+            SerialError::OsError { code: _ , desc } => std::io::Error::new(ErrorKind::Other, desc),
         }
     }
 }

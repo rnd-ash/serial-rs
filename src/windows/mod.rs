@@ -1,9 +1,12 @@
 //! Windows COM Port handler
 
+use std::fmt::Debug;
 use std::{cmp::max, io::ErrorKind};
 
 use crate::{return_win_op, SerialPort, SerialPortState, SerialResult};
+use winapi::um::fileapi::CreateFileW;
 use winapi::um::ioapiset::GetOverlappedResult;
+use winapi::um::synchapi::CreateEventW;
 use winapi::{
     shared::{
         minwindef::{DWORD, LPVOID},
@@ -18,10 +21,10 @@ use winapi::{
             PurgeComm, SetCommBreak, SetCommMask, SetCommState, SetCommTimeouts, SetupComm,
         },
         errhandlingapi::GetLastError,
-        fileapi::{CreateFileA, ReadFile, WriteFile, OPEN_EXISTING},
+        fileapi::{ReadFile, WriteFile, OPEN_EXISTING},
         handleapi::{CloseHandle, INVALID_HANDLE_VALUE},
         minwinbase::OVERLAPPED,
-        synchapi::{CreateEventA, ResetEvent},
+        synchapi::{ResetEvent},
         winbase::{
             CLRDTR, CLRRTS, COMMTIMEOUTS, COMSTAT, DCB, DTR_CONTROL_DISABLE, DTR_CONTROL_ENABLE,
             DTR_CONTROL_HANDSHAKE, EVENPARITY, FILE_FLAG_OVERLAPPED, MARKPARITY, MS_CTS_ON,
@@ -36,7 +39,8 @@ use winapi::{
 
 use self::error::get_win_error;
 
-mod error;
+pub (crate) mod error;
+pub mod port_lister;
 
 /// Windows COM Port
 pub struct COMPort {
@@ -47,6 +51,12 @@ pub struct COMPort {
     path: String,
 }
 
+impl Debug for COMPort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("COMPort").field("serial_state", &self.serial_state).field("path", &self.path).finish()
+    }
+}
+
 unsafe impl Send for COMPort {}
 unsafe impl Sync for COMPort {}
 
@@ -54,18 +64,15 @@ impl COMPort {
     /// Creates a new COM Port and opens it
     #[allow(unused)]
     pub fn new(path: String, initial_state: Option<SerialPortState>) -> SerialResult<Self> {
-        let mut p = path.to_string();
-        if path.to_uppercase().starts_with("COM") {
-            if let Ok(p_number) = u32::from_str_radix(&path[3..], 10) {
-                if p_number > 8 {
-                    p = format!("\\\\.\\{}", path);
-                }
-            }
-        }
+        let mut name = Vec::<u16>::with_capacity(4 + path.len() + 1);
+
+        name.extend(r"\\.\".encode_utf16());
+        name.extend(path.encode_utf16());
+        name.push(0);
 
         let handle = unsafe {
-            CreateFileA(
-                p.as_ptr() as *const i8,
+            CreateFileW(
+                name.as_ptr(),
                 GENERIC_READ | GENERIC_WRITE,
                 0,
                 std::ptr::null_mut(),
@@ -81,9 +88,9 @@ impl COMPort {
         let mut overlapped_read: OVERLAPPED = unsafe { std::mem::zeroed() };
         let mut overlapped_write: OVERLAPPED = unsafe { std::mem::zeroed() };
         overlapped_read.hEvent =
-            unsafe { CreateEventA(std::ptr::null_mut(), 1, 0, std::ptr::null_mut()) };
+            unsafe { CreateEventW(std::ptr::null_mut(), 1, 0, std::ptr::null_mut()) };
         overlapped_write.hEvent =
-            unsafe { CreateEventA(std::ptr::null_mut(), 0, 0, std::ptr::null_mut()) };
+            unsafe { CreateEventW(std::ptr::null_mut(), 0, 0, std::ptr::null_mut()) };
 
         if overlapped_read.hEvent == INVALID_HANDLE_VALUE {
             return Err(get_win_error());
@@ -126,11 +133,11 @@ impl super::SerialPort for COMPort {
             if timeout == 0 {
                 timeouts.ReadIntervalTimeout = MAXDWORD;
             } else {
-                timeouts.ReadTotalTimeoutConstant = max((timeout as u32) * 1000, 1);
+                timeouts.ReadTotalTimeoutConstant = max(timeout as u32, 1);
             }
             if timeout != 0 && self.serial_state.inter_byte_timeout.is_some() {
                 timeouts.ReadIntervalTimeout = max(
-                    (self.serial_state.inter_byte_timeout.unwrap() as u32) * 1000,
+                    self.serial_state.inter_byte_timeout.unwrap() as u32,
                     1,
                 );
             }
@@ -140,7 +147,7 @@ impl super::SerialPort for COMPort {
             if timeout == 0 {
                 timeouts.WriteTotalTimeoutConstant = MAXDWORD;
             } else {
-                timeouts.WriteTotalTimeoutConstant = max((timeout as u32) * 1000, 1);
+                timeouts.WriteTotalTimeoutConstant = max(timeout as u32, 1);
             }
         }
         return_win_op!(SetCommTimeouts(self.handle, &mut timeouts))?;
@@ -294,7 +301,11 @@ impl super::SerialPort for COMPort {
     }
 
     fn bytes_to_write(&self) -> SerialResult<usize> {
-        todo!()
+        let mut flags: DWORD = 0;
+        let mut comstat: COMSTAT = unsafe { std::mem::zeroed() };
+
+        return_win_op!(ClearCommError(self.handle, &mut flags, &mut comstat))?;
+        Ok(comstat.cbOutQue as usize)
     }
 
     fn get_path(&self) -> String {
@@ -388,6 +399,11 @@ impl std::io::Read for COMPort {
                 &mut self.overlapped_read,
             )
         };
+
+        if read_count == to_read as u32 {
+            return Ok(to_read);
+        }
+
         if read_status == 0 && !VALID_PENDING_ERRORS.contains(&unsafe { GetLastError() }) {
             return Err(get_win_error().into());
         }
@@ -402,5 +418,15 @@ impl std::io::Read for COMPort {
             }
         }
         Ok(read_count as usize)
+    }
+}
+
+impl Drop for COMPort {
+    fn drop(&mut self) {
+        unsafe {
+            CloseHandle(self.overlapped_read.hEvent);
+            CloseHandle(self.overlapped_write.hEvent);
+            CloseHandle(self.handle);
+        }
     }
 }

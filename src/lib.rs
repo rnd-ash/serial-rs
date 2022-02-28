@@ -14,10 +14,10 @@ const XOFF: i8 = 19;
 //const LF: i8 = 10;
 
 #[cfg(unix)]
-mod posix;
+pub mod posix;
 
 #[cfg(windows)]
-mod windows;
+pub mod windows;
 
 /// Serial port result type
 pub type SerialResult<T> = std::result::Result<T, SerialError>;
@@ -109,6 +109,55 @@ impl Default for SerialPortState {
     }
 }
 
+#[allow(missing_docs)]
+impl SerialPortState {
+    /// Set baud rate
+    pub fn baud(mut self, baud: u32) -> Self {
+        self.baud_rate = baud;
+        self
+    }
+
+    pub fn read_timeout(mut self, timeout: Option<u128>) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    pub fn byte_size(mut self, byte_size: ByteSize) -> Self {
+        self.byte_size = byte_size;
+        self
+    }
+
+    pub fn write_timeout(mut self, timeout: Option<u128>) -> Self {
+        self.write_timeout = timeout;
+        self
+    }
+
+    pub fn parity(mut self, parity: Parity) -> Self {
+        self.parity = parity;
+        self
+    }
+
+    pub fn stop_bits(mut self, stop_bits: StopBits) -> Self {
+        self.stop_bits = stop_bits;
+        self
+    }
+
+    pub fn xon_xoff(mut self, state: bool) -> Self {
+        self.xon_xoff = state;
+        self
+    }
+
+    pub fn rts_cts(mut self, state: bool) -> Self {
+        self.rts_cts = state;
+        self
+    }
+
+    pub fn dsr_dtr(mut self, state: bool) -> Self {
+        self.dsr_dtr = state;
+        self
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 /// Bytesize for serial port
 pub enum ByteSize {
@@ -152,25 +201,32 @@ pub enum StopBits {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct PortInfo {
     /// Name of the device
-    name: String,
+    port: String,
     /// Hardware-ID of the device
     hwid: String,
     /// Vendor ID
     vid: u16,
     /// Product ID
     pid: u16,
-    /// Serial number of the device
-    serial_number: String,
-    /// Location of the device
-    location: String,
     /// Manufacturer
     manufacturer: String,
-    /// Product name
-    product: String,
-    /// Interface type
-    interface: String,
-    /// Subsystem device is using
-    subsystem: String,
+    /// Description of the device
+    description: String,
+}
+
+impl PortInfo {
+    /// Gets port name
+    pub fn get_port(&self) -> &str { &self.port }
+    /// Gets port system hardware-ID
+    pub fn get_hwid(&self) -> &str { &self.hwid }
+    /// Gets port devices' ProductID
+    pub fn get_pid(&self) -> u16 { self.pid }
+    /// Gets port devices' VendorID
+    pub fn get_vid(&self) -> u16 { self.vid }
+    /// Gets port devices' manufacturer
+    pub fn get_manufacturer(&self) -> &str { &self.manufacturer }
+    /// Gets port devices' description
+    pub fn get_desc(&self) -> &str { &self.description }
 }
 
 /// Serial port trait
@@ -208,5 +264,5 @@ pub trait SerialPort: Send + std::io::Write + std::io::Read {
 /// Scanner to list avaliable serial ports on a system
 pub trait PortScanner {
     /// Lists avaliable serial ports on a system
-    fn list_devices(&mut self) -> Vec<PortInfo>;
+    fn list_devices(&mut self) -> SerialResult<Vec<PortInfo>>;
 }

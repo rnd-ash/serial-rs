@@ -1,0 +1,26 @@
+[package]
+name = "pyserial-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ashcon Mohseninia <ashconm@outlook.com>"]
+description = "A cross-platform rust serial library based on pyserial"
+readme = "README.md"
+repository = "https://github.com/rnd-ash/pyserial-rs"
+keywords = ["serial", "pyserial", "rs232"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[package.metadata.docs.rs]
+all-features = true
+targets = ["x86_64-unknown-linux-gnu", "i686-pc-windows-msvc", "x86_64-apple-darwin"]
+
+
+[dependencies]
+glob="0.3.0"
+
+[target."cfg(windows)".dependencies.winapi]
+version = "0.3.9"
+features = ["cguid", "commapi", "errhandlingapi", "fileapi", "guiddef", "handleapi", "minwinbase",
+            "minwindef", "ntdef", "setupapi", "winbase", "winerror", "winnt", "synchapi", "ioapiset"]

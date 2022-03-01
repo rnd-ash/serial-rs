@@ -1,5 +1,5 @@
-//! pyserial-rs is a cross-platform serial library
-//! based on the [Pyserial project](https://github.com/pyserial/pyserial)
+//! serial-rs is a cross-platform serial library
+//! A lot of the code here is based on the [Pyserial project](https://github.com/pyserial/pyserial)
 
 #![deny(
     missing_docs,

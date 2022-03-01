@@ -1,12 +1,12 @@
 [package]
-name = "pyserial-rs"
+name = "serial-rs"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ashcon Mohseninia <ashconm@outlook.com>"]
-description = "A cross-platform rust serial library based on pyserial"
+description = "A cross-platform rust serial RS232 library"
 readme = "README.md"
 repository = "https://github.com/rnd-ash/pyserial-rs"
-keywords = ["serial", "pyserial", "rs232"]
+keywords = ["serial", "modem", "serialport", "rs232"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [badges]

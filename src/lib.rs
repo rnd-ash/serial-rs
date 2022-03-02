@@ -5,13 +5,19 @@
     missing_docs,
     missing_debug_implementations,
     missing_copy_implementations,
+    dead_code,
+    while_true,
     unused
 )]
 
+#[allow(unused)]
 const XON: i8 = 17;
+#[allow(unused)]
 const XOFF: i8 = 19;
-//const CR: i8 = 13;
-//const LF: i8 = 10;
+#[allow(unused)]
+const CR: i8 = 13;
+#[allow(unused)]
+const LF: i8 = 10;
 
 #[cfg(unix)]
 pub mod posix;
@@ -33,6 +39,8 @@ pub enum SerialError {
         /// OS Error description
         desc: String,
     },
+    /// Internal library error
+    LibraryError(String)
 }
 
 impl std::fmt::Debug for SerialError {
@@ -44,6 +52,7 @@ impl std::fmt::Debug for SerialError {
                 .field("code", code)
                 .field("desc", desc)
                 .finish(),
+            SerialError::LibraryError(e) => f.debug_tuple("LibraryError").field(e).finish(),
         }
     }
 }
@@ -55,6 +64,7 @@ impl std::fmt::Display for SerialError {
                 write!(f, "IoError {}", e)
             }
             SerialError::OsError { code, desc } => write!(f, "OsError {code} ({desc})"),
+            SerialError::LibraryError(e) => write!(f, "Serial-RS Lib error '{e}'"),
         }
     }
 }
@@ -71,46 +81,34 @@ impl std::error::Error for SerialError {
 
 /// Serial port settings
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SerialPortState {
+pub struct SerialPortSettings {
     baud_rate: u32,
     byte_size: ByteSize,
     parity: Parity,
     stop_bits: StopBits,
-    timeout: Option<u128>,
-    xon_xoff: bool,
-    rts_cts: bool,
+    read_timeout: Option<u128>,
+    flow_control: FlowControl,
     write_timeout: Option<u128>,
-    dsr_dtr: bool,
-    inter_byte_timeout: Option<u128>,
-    rs485_mode: bool,
-    rts_state: bool,
-    dtr_state: bool,
-    break_state: bool,
+    inter_byte_timeout: Option<u128>
 }
 
-impl Default for SerialPortState {
+impl Default for SerialPortSettings {
     fn default() -> Self {
         Self {
             baud_rate: 9600,
             byte_size: ByteSize::Eight,
             parity: Parity::None,
             stop_bits: StopBits::One,
-            timeout: None,
-            xon_xoff: false,
-            rts_cts: false,
+            read_timeout: None,
             write_timeout: None,
-            dsr_dtr: false,
+            flow_control: FlowControl::None,
             inter_byte_timeout: None,
-            rs485_mode: false,
-            rts_state: true,
-            dtr_state: true,
-            break_state: false,
         }
     }
 }
 
 #[allow(missing_docs)]
-impl SerialPortState {
+impl SerialPortSettings {
     /// Set baud rate
     pub fn baud(mut self, baud: u32) -> Self {
         self.baud_rate = baud;
@@ -118,7 +116,7 @@ impl SerialPortState {
     }
 
     pub fn read_timeout(mut self, timeout: Option<u128>) -> Self {
-        self.timeout = timeout;
+        self.read_timeout = timeout;
         self
     }
 
@@ -142,20 +140,23 @@ impl SerialPortState {
         self
     }
 
-    pub fn xon_xoff(mut self, state: bool) -> Self {
-        self.xon_xoff = state;
+    pub fn set_flow_control(mut self, method: FlowControl) -> Self {
+        self.flow_control = method;
         self
     }
+}
 
-    pub fn rts_cts(mut self, state: bool) -> Self {
-        self.rts_cts = state;
-        self
-    }
-
-    pub fn dsr_dtr(mut self, state: bool) -> Self {
-        self.dsr_dtr = state;
-        self
-    }
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+/// Flow control method
+pub enum FlowControl {
+    /// No flow control
+    None,
+    /// DSR DTR flow control (Software)
+    DsrDtr,
+    /// XON XOFF flow control (Software)
+    XonXoff,
+    /// CTS RTS flow control (Hardware)
+    RtsCts
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -259,6 +260,13 @@ pub trait SerialPort: Send + std::io::Write + std::io::Read {
     fn bytes_to_write(&self) -> SerialResult<usize>;
     /// Gets the path of the port
     fn get_path(&self) -> String;
+    /// Tries to clone the port.
+    /// 
+    /// # Note about cloning
+    /// You must be careful when cloning a port as this can have interesting
+    /// effects. For example, if one thread tries to close the port but another
+    /// thread wants the port open
+    fn try_clone(&mut self) -> SerialResult<Box<dyn SerialPort>>;
 }
 
 /// Scanner to list avaliable serial ports on a system

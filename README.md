@@ -1,4 +1,7 @@
 # Serial-rs
 A cross-platform serial library for Rust
 
-TBA
+## Supported platforms
+|Windows|Linux|OSX|BSD|Android|IOS|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|Yes|Yes|Unknown|No|No|No|

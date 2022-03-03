@@ -290,3 +290,45 @@ impl From<SerialError> for std::io::Error {
         }
     }
 }
+
+/// Creates a new serial port from port info
+pub fn new(info: PortInfo, settings: Option<SerialPortSettings>) -> SerialResult<Box<dyn SerialPort>> {
+    #[cfg(unix)]
+    {
+        use posix::*;
+        Ok(Box::new(TTYPort::new(info.port, settings)?))
+    }
+    #[cfg(windows)]
+    {
+        use windows::*;
+        Ok(Box::new(COMPort::new(info.port, settings)?))
+    }
+}
+
+/// Creates a new serial port from port path
+pub fn new_from_path(path: &str, settings: Option<SerialPortSettings>) -> SerialResult<Box<dyn SerialPort>> {
+    #[cfg(unix)]
+    {
+        use posix::*;
+        Ok(Box::new(TTYPort::new(path.to_string(), settings)?))
+    }
+    #[cfg(windows)]
+    {
+        use windows::*;
+        Ok(Box::new(COMPort::new(path.to_string(), settings)?))
+    }
+}
+
+/// Lists all ports on the system
+pub fn list_ports() -> SerialResult<Vec<PortInfo>> {
+    #[cfg(unix)]
+    {
+        use posix::port_lister::TTYPortScanner;
+        TTYPortScanner{}.list_devices()
+    }
+    #[cfg(windows)]
+    {
+        use windows::port_lister::COMPortLister;
+        COMPortLister{}.list_devices()
+    }
+}

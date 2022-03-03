@@ -9,9 +9,7 @@ use crate::{return_win_op, windows::error::get_win_error, SerialResult, PortInfo
 
 #[derive(Debug, Copy, Clone)]
 /// Windows COM Port lister
-pub struct COMPortLister {
-
-}
+pub struct COMPortLister {}
 
 const PORT_NAME_LEN: usize = 500;
 

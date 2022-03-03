@@ -6,14 +6,8 @@ use crate::PortInfo;
 
 /// TTY port scanner
 #[derive(Debug, Clone, Copy)]
-pub struct TTYPortScanner {
+pub struct TTYPortScanner {}
 
-}
-
-
-impl TTYPortScanner {
-
-}
 
 fn get_paths(g: &str) -> Vec<PathBuf> {
     let mut ret: Vec<PathBuf> = vec![];

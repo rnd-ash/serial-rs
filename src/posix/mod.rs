@@ -8,6 +8,8 @@ use crate::{SerialPortSettings, SerialResult, SerialPort, SerialError, FlowContr
 mod error;
 mod ioctl;
 
+pub mod port_lister;
+
 /// A TTY port
 #[derive(Debug, Clone)]
 pub struct TTYPort {

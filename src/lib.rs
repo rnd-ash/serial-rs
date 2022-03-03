@@ -10,6 +10,8 @@
     unused
 )]
 
+use std::io::ErrorKind;
+
 #[allow(unused)]
 const XON: i8 = 17;
 #[allow(unused)]
@@ -267,10 +269,24 @@ pub trait SerialPort: Send + std::io::Write + std::io::Read {
     /// effects. For example, if one thread tries to close the port but another
     /// thread wants the port open
     fn try_clone(&mut self) -> SerialResult<Box<dyn SerialPort>>;
+    /// Clears serial input buffer
+    fn clear_input_buffer(&mut self) -> SerialResult<()>;
+    /// Clears serial output buffer
+    fn clear_output_buffer(&mut self) -> SerialResult<()>;
 }
 
 /// Scanner to list avaliable serial ports on a system
 pub trait PortScanner {
     /// Lists avaliable serial ports on a system
     fn list_devices(&mut self) -> SerialResult<Vec<PortInfo>>;
+}
+
+impl From<SerialError> for std::io::Error {
+    fn from(e: SerialError) -> Self {
+        match e {
+            SerialError::IoError(i) => i,
+            SerialError::OsError { code: _ , desc } => std::io::Error::new(ErrorKind::Other, desc),
+            SerialError::LibraryError(e) => std::io::Error::new(ErrorKind::Other, e),
+        }
+    }
 }

@@ -8,6 +8,7 @@ ioctl_none_bad!(tiocsbrk, libc::TIOCSBRK);
 ioctl_none_bad!(tioccbrk, libc::TIOCCBRK);
 ioctl_read_bad!(fionread, libc::FIONREAD, libc::c_int);
 ioctl_read_bad!(tiocoutq, libc::TIOCOUTQ, libc::c_int);
+ioctl_read_bad!(tiocinq, libc::TIOCINQ, libc::c_int);
 ioctl_write_ptr_bad!(tiocmbic, libc::TIOCMBIC, libc::c_int);
 ioctl_write_ptr_bad!(tiocmbis, libc::TIOCMBIS, libc::c_int);
 ioctl_read!(tcgets2, b'T', 0x2A, libc::termios);

@@ -1,4 +1,4 @@
-use std::{ptr, io::ErrorKind};
+use std::ptr;
 use winapi::{
     shared::{minwindef::DWORD, ntdef::MAKELANGID},
     um::{
@@ -19,15 +19,6 @@ macro_rules! return_win_op {
             _ => Ok(()),
         }
     };
-}
-
-impl From<SerialError> for std::io::Error {
-    fn from(e: SerialError) -> Self {
-        match e {
-            SerialError::IoError(i) => i,
-            SerialError::OsError { code: _ , desc } => std::io::Error::new(ErrorKind::Other, desc),
-        }
-    }
 }
 
 pub(crate) fn get_win_error() -> crate::SerialError {

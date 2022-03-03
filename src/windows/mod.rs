@@ -333,6 +333,14 @@ impl super::SerialPort for COMPort {
         }
 
     }
+
+    fn clear_input_buffer(&mut self) -> SerialResult<()> {
+        return_win_op!(PurgeComm(self.handle, PURGE_RXABORT | PURGE_RXCLEAR))
+    }
+
+    fn clear_output_buffer(&mut self) -> SerialResult<()> {
+        return_win_op!(PurgeComm(self.handle, PURGE_TXABORT | PURGE_TXCLEAR))
+    }
 }
 
 const VALID_PENDING_ERRORS: [DWORD; 2] = [ERROR_SUCCESS, ERROR_IO_PENDING];

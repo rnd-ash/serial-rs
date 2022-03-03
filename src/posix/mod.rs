@@ -2,8 +2,8 @@
 
 use std::{os::unix::prelude::RawFd, path::Path, slice, io};
 
-use nix::{libc::{close, self}, fcntl::{OFlag, flock, FlockArg, fcntl, self}, sys::{termios::{tcgetattr, tcsetattr, ControlFlags, LocalFlags, OutputFlags, InputFlags, cfsetospeed, cfsetispeed, BaudRate, SpecialCharacterIndices, tcflow, FlowArg, tcdrain}, time::TimeSpec, signal::SigSet}, unistd::pipe, poll::{PollFlags, PollFd}};
-use crate::{SerialPortSettings, SerialResult, SerialPort, SerialError};
+use nix::{libc::{close, self}, fcntl::{OFlag, flock, FlockArg, fcntl, self}, sys::{termios::{tcgetattr, tcsetattr, tcflush, ControlFlags, LocalFlags, OutputFlags, InputFlags, cfsetospeed, cfsetispeed, BaudRate, SpecialCharacterIndices, tcflow, FlowArg, tcdrain}, time::TimeSpec, signal::SigSet}, poll::{PollFlags, PollFd}};
+use crate::{SerialPortSettings, SerialResult, SerialPort, SerialError, FlowControl};
 
 mod error;
 mod ioctl;
@@ -12,11 +12,8 @@ mod ioctl;
 #[derive(Debug, Clone)]
 pub struct TTYPort {
     fd: RawFd,
-    pipe_abort_read_w: RawFd,
-    pipe_abort_read_r: RawFd,
-    pipe_abort_write_w: RawFd,
-    pipe_abort_write_r: RawFd,
     settings: SerialPortSettings,
+    path: String,
 }
 
 
@@ -28,20 +25,19 @@ impl TTYPort {
         let mut port = TTYPort {
             fd,
             settings: settings.unwrap_or_default(),
-            pipe_abort_read_w: -1,
-            pipe_abort_read_r: -1,
-            pipe_abort_write_r: -1,
-            pipe_abort_write_w: -1
+            path
         };
 
         port.reconfigure_port()?;
+        if port.settings.flow_control != FlowControl::DsrDtr {
+            port.set_data_terminal_ready(true)?;
+        }
 
-        let (r_r, r_w) = pipe()?;
-        let (w_r, w_w) = pipe()?;
-        port.pipe_abort_read_r = r_r;
-        port.pipe_abort_read_w = r_w;
-        port.pipe_abort_write_r = w_r;
-        port.pipe_abort_write_w = w_w;
+        if port.settings.flow_control != FlowControl::RtsCts {
+            port.set_request_to_send(true)?;
+        }
+        port.clear_input_buffer()?;
+        port.clear_output_buffer()?;
         Ok(port)
     }
 }
@@ -64,6 +60,10 @@ impl super::SerialPort for TTYPort {
             LocalFlags::ECHOK | LocalFlags::ECHONL | LocalFlags::ISIG |
             LocalFlags::IEXTEN
         );
+
+        for flag in [LocalFlags::ECHOCTL, LocalFlags::ECHOKE] {
+            orig_attr.local_flags &= !flag;
+        }
 
         orig_attr.output_flags &= !(OutputFlags::OPOST | OutputFlags::ONLCR | OutputFlags::OCRNL);
         orig_attr.input_flags &= !(InputFlags::INLCR | InputFlags::IGNCR | InputFlags::ICRNL | InputFlags::IGNBRK);
@@ -150,7 +150,7 @@ impl super::SerialPort for TTYPort {
                 orig_attr.control_flags &= !(ControlFlags::CRTSCTS)
             },
             crate::FlowControl::XonXoff => {
-                orig_attr.input_flags |= InputFlags::IXON | InputFlags::IXOFF | InputFlags::IXANY;
+                orig_attr.input_flags |= InputFlags::IXON | InputFlags::IXOFF;
                 orig_attr.control_flags &= !ControlFlags::CRTSCTS;
             },
             crate::FlowControl::RtsCts => {
@@ -175,10 +175,6 @@ impl super::SerialPort for TTYPort {
     fn close(self) -> crate::SerialResult<()> {
         unsafe {
             close(self.fd);
-            close(self.pipe_abort_read_r);
-            close(self.pipe_abort_read_w);
-            close(self.pipe_abort_write_r);
-            close(self.pipe_abort_write_w);
         }
         Ok(())
     }
@@ -242,26 +238,37 @@ impl super::SerialPort for TTYPort {
     }
 
     fn bytes_to_read(&self) -> crate::SerialResult<usize> {
-        todo!()
+        let mut bytes: i32 = 0;
+        unsafe {ioctl::tiocinq(self.fd, &mut bytes)?};
+        Ok(bytes as usize)
     }
 
     fn bytes_to_write(&self) -> crate::SerialResult<usize> {
-        todo!()
+        let mut bytes: i32 = 0;
+        unsafe {ioctl::tiocoutq(self.fd, &mut bytes)?};
+        Ok(bytes as usize)
     }
 
     fn get_path(&self) -> String {
-        todo!()
+        self.path.clone()
     }
 
     fn try_clone(&mut self) -> crate::SerialResult<Box<dyn crate::SerialPort>> {
         Ok(Box::new(TTYPort {
             fd: fcntl(self.fd, fcntl::F_DUPFD(self.fd))?,
-            pipe_abort_read_w: fcntl(self.pipe_abort_read_w, fcntl::F_DUPFD(self.pipe_abort_read_w))?,
-            pipe_abort_read_r: fcntl(self.pipe_abort_read_r, fcntl::F_DUPFD(self.pipe_abort_read_r))?,
-            pipe_abort_write_w: fcntl(self.pipe_abort_write_w, fcntl::F_DUPFD(self.pipe_abort_write_w))?,
-            pipe_abort_write_r: fcntl(self.pipe_abort_write_r, fcntl::F_DUPFD(self.pipe_abort_write_r))?,
             settings: self.settings.clone(),
+            path: self.path.clone()
         }))
+    }
+
+    fn clear_input_buffer(&mut self) -> SerialResult<()> {
+        tcflush(self.fd, nix::sys::termios::FlushArg::TCIFLUSH)?;
+        Ok(())
+    }
+
+    fn clear_output_buffer(&mut self) -> SerialResult<()> {
+        tcflush(self.fd, nix::sys::termios::FlushArg::TCIOFLUSH)?;
+        Ok(())
     }
 }
 
@@ -297,10 +304,6 @@ impl Drop for TTYPort {
     fn drop(&mut self) {
         unsafe {
             close(self.fd);
-            close(self.pipe_abort_read_r);
-            close(self.pipe_abort_read_w);
-            close(self.pipe_abort_write_r);
-            close(self.pipe_abort_write_w);
         }
     }
 }

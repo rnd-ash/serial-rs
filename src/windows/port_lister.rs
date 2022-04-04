@@ -99,7 +99,7 @@ impl crate::PortScanner for COMPortLister {
                 if unsafe {
                     SetupDiGetDeviceRegistryPropertyA(g_hdi, &mut dev_info, SPDRP_FRIENDLYNAME, std::ptr::null_mut(), friendly_name_buffer.as_mut_ptr(), friendly_name_buffer_len-1, std::ptr::null_mut())
                 } != 0 {
-                    tmp = String::from_utf8(friendly_name_buffer.to_vec()).unwrap();
+                    tmp = String::from_utf8_lossy(&friendly_name_buffer).to_string();
                     info.description = tmp.trim_matches(char::from(0x00)).to_string();
                 }
 
@@ -107,7 +107,7 @@ impl crate::PortScanner for COMPortLister {
                 if unsafe {
                     SetupDiGetDeviceRegistryPropertyA(g_hdi, &mut dev_info, SPDRP_MFG, std::ptr::null_mut(), friendly_name_buffer.as_mut_ptr(), friendly_name_buffer_len-1, std::ptr::null_mut())
                 } != 0 {
-                    tmp = String::from_utf8(friendly_name_buffer.to_vec()).unwrap();
+                    tmp = String::from_utf8_lossy(&friendly_name_buffer).to_string();
                     info.manufacturer = tmp.trim_matches(char::from(0x00)).to_string();
                 }
                 devices.push(info);

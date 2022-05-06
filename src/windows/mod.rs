@@ -398,7 +398,7 @@ impl std::io::Write for COMPort {
 
     fn flush(&mut self) -> std::io::Result<()> {
         loop {
-            if self.bytes_to_write()? != 0 {break;}
+            if self.bytes_to_write()? == 0 {break;}
         }
         Ok(())
     }

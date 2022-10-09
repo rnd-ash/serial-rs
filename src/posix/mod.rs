@@ -72,46 +72,50 @@ impl super::SerialPort for TTYPort {
         if orig_attr.input_flags.contains(InputFlags::PARMRK) {
             orig_attr.input_flags &= !InputFlags::PARMRK;
         }
+        #[cfg(target_os="linux")]
+        {
+            let baud = match self.settings.baud_rate {
+                50 => BaudRate::B50,
+                75 => BaudRate::B75,
+                110 => BaudRate::B110,
+                134 => BaudRate::B134,
+                150 => BaudRate::B150,
+                200 => BaudRate::B200,
+                300 => BaudRate::B300,
+                600 => BaudRate::B600,
+                1200 => BaudRate::B1200,
+                1800 => BaudRate::B1800,
+                2400 => BaudRate::B2400,
+                4800 => BaudRate::B4800,
+                9600 => BaudRate::B9600,
+                19_200 => BaudRate::B19200,
+                38_400 => BaudRate::B38400,
+                57_600 => BaudRate::B57600,
+                115_200 => BaudRate::B115200,
+                230_400 => BaudRate::B230400,
+                460_800 => BaudRate::B460800, 
+                500_000 => BaudRate::B500000,
+                576_000 => BaudRate::B576000,
+                921_600 => BaudRate::B921600,
+                1_000_000 => BaudRate::B1000000,
+                1_152_000 => BaudRate::B1152000,
+                1_500_000 => BaudRate::B1500000,
+                2_000_000 => BaudRate::B2000000,
+                2_500_000 => BaudRate::B2500000,
+                3_000_000 => BaudRate::B3000000,
+                3_500_000 => BaudRate::B3500000,
+                4_000_000 => BaudRate::B4000000,
+                _ => return Err(SerialError::LibraryError(format!("Baud rate {} is unsupported on NIX", self.settings.baud_rate)))
+            };
 
-        let baud = match self.settings.baud_rate {
-            50 => BaudRate::B50,
-            75 => BaudRate::B75,
-            110 => BaudRate::B110,
-            134 => BaudRate::B134,
-            150 => BaudRate::B150,
-            200 => BaudRate::B200,
-            300 => BaudRate::B300,
-            600 => BaudRate::B600,
-            1200 => BaudRate::B1200,
-            1800 => BaudRate::B1800,
-            2400 => BaudRate::B2400,
-            4800 => BaudRate::B4800,
-            9600 => BaudRate::B9600,
-            19_200 => BaudRate::B19200,
-            38_400 => BaudRate::B38400,
-            57_600 => BaudRate::B57600,
-            115_200 => BaudRate::B115200,
-            /*
-            230_400 => BaudRate::B230400,
-            460_800 => BaudRate::B460800, 
-            500_000 => BaudRate::B500000,
-            576_000 => BaudRate::B576000,
-            921_600 => BaudRate::B921600,
-            1_000_000 => BaudRate::B1000000,
-            1_152_000 => BaudRate::B1152000,
-            1_500_000 => BaudRate::B1500000,
-            2_000_000 => BaudRate::B2000000,
-            2_500_000 => BaudRate::B2500000,
-            3_000_000 => BaudRate::B3000000,
-            3_500_000 => BaudRate::B3500000,
-            4_000_000 => BaudRate::B4000000,
-            */
-            _ => return Err(SerialError::LibraryError(format!("Baud rate {} is unsupported on NIX", self.settings.baud_rate)))
-        };
-
-        // Set baudrate
-        cfsetispeed(&mut orig_attr, baud)?;
-        cfsetospeed(&mut orig_attr, baud)?;
+            // Set baudrate
+            cfsetispeed(&mut orig_attr, baud)?;
+            cfsetospeed(&mut orig_attr, baud)?;
+        }
+        #[cfg(target_os="macos")]
+        {
+            ioctl::iossiospeed(&mut orig_attr, &(self.settings.baud_rate as libc::speed_t))?;
+        }
 
         orig_attr.control_flags |= match self.settings.byte_size {
             crate::ByteSize::Five => ControlFlags::CS5,

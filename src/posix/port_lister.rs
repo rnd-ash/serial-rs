@@ -32,6 +32,7 @@ impl crate::PortScanner for TTYPortScanner {
             .chain(get_paths("/dev/rfcomm*"))
             .chain(get_paths("/dev/ttyAP*"))
             .chain(get_paths("/dev/ttyGS*")) 
+            .chain(get_paths("/dev/cu*")) // OSX
         {
             let dev_name = port.to_str().unwrap().split("/").last().unwrap();
 

@@ -19,7 +19,8 @@ ioctl_read_bad!(tiocoutq, libc::TIOCOUTQ, libc::c_int);
 #[cfg(target_os = "macos")]
 ioctl_read!(tiocoutq, b't', 115, libc::c_int);
 
-ioctl_read_bad!(tiocinq, libc::TIOCINQ, libc::c_int);
+ioctl_read_bad!(tiocinq, libc::FIONREAD, libc::c_int);
+
 ioctl_write_ptr_bad!(tiocmbic, libc::TIOCMBIC, libc::c_int);
 ioctl_write_ptr_bad!(tiocmbis, libc::TIOCMBIS, libc::c_int);
 

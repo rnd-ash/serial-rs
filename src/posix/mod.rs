@@ -320,6 +320,9 @@ fn wait_fd(fd: RawFd, events: PollFlags, timeout: u128) -> std::io::Result<()> {
         nix::poll::ppoll(slice::from_mut(&mut fd), Some(timespec), SigSet::empty())
     };
 
+    #[cfg(not(target_os = "linux"))]
+    let wait_res = nix::poll::poll(slice::from_mut(&mut fd), milliseconds as nix::libc::c_int);
+
     let wait = match wait_res {
         Ok(r) => r,
         Err(e) => {return Err(io::Error::new(

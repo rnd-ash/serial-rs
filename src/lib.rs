@@ -6,10 +6,8 @@
     missing_debug_implementations,
     missing_copy_implementations,
     dead_code,
-    while_true,
-    unused
+    while_true
 )]
-
 use std::io::ErrorKind;
 
 #[allow(unused)]
@@ -183,10 +181,6 @@ pub enum Parity {
     Even,
     /// Odd parity
     Odd,
-    /// Mark parity
-    Mark,
-    /// Space parity
-    Space,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]

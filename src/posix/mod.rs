@@ -126,22 +126,20 @@ impl super::SerialPort for TTYPort {
 
         orig_attr.input_flags &= !(InputFlags::INPCK | InputFlags::ISTRIP);
         // Parity
+
+        #[cfg(not(target_os="macos"))]
+        {
+            orig_attr.control_flags &= !(ControlFlags::CMSPAR);
+        }
+
         match self.settings.parity {
-            crate::Parity::None => orig_attr.control_flags &= !(ControlFlags::PARENB | ControlFlags::PARODD | ControlFlags::CMSPAR),
+            crate::Parity::None => orig_attr.control_flags &= !(ControlFlags::PARENB | ControlFlags::PARODD),
             crate::Parity::Even => {
-                orig_attr.control_flags &= !(ControlFlags::PARODD | ControlFlags::CMSPAR);
+                orig_attr.control_flags &= !(ControlFlags::PARODD);
                 orig_attr.control_flags |= ControlFlags::PARENB;
             },
             crate::Parity::Odd => {
-                orig_attr.control_flags &= !(ControlFlags::CMSPAR);
                 orig_attr.control_flags |= ControlFlags::PARENB | ControlFlags::PARODD;
-            },
-            crate::Parity::Mark => {
-                orig_attr.control_flags |= ControlFlags::PARENB | ControlFlags::PARODD | ControlFlags::CMSPAR
-            },
-            crate::Parity::Space => {
-                orig_attr.control_flags |= ControlFlags::PARENB | ControlFlags::CMSPAR;
-                orig_attr.control_flags &= !(ControlFlags::PARODD);
             },
         };
 

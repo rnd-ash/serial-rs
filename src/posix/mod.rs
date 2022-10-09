@@ -114,7 +114,7 @@ impl super::SerialPort for TTYPort {
         }
         #[cfg(target_os="macos")]
         {
-            ioctl::iossiospeed(&mut self.fd, &(self.settings.baud_rate as libc::speed_t))?;
+            ioctl::iossiospeed(self.fd, &(self.settings.baud_rate as libc::speed_t))?;
         }
 
         orig_attr.control_flags |= match self.settings.byte_size {

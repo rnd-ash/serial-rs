@@ -321,7 +321,7 @@ fn wait_fd(fd: RawFd, events: PollFlags, timeout: u128) -> std::io::Result<()> {
     };
 
     #[cfg(not(target_os = "linux"))]
-    let wait_res = nix::poll::poll(slice::from_mut(&mut fd), milliseconds as nix::libc::c_int);
+    let wait_res = nix::poll::poll(slice::from_mut(&mut fd), timeout as nix::libc::c_int);
 
     let wait = match wait_res {
         Ok(r) => r,

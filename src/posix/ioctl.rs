@@ -1,3 +1,6 @@
+#[cfg(target_os = "macos")]
+use std::os::unix::prelude::RawFd;
+
 use nix::{ioctl_none_bad, libc, ioctl_read_bad, ioctl_write_ptr_bad, ioctl_read, ioctl_write_ptr};
 
 
@@ -34,12 +37,12 @@ ioctl_write_ptr!(tcsets2, b'T', 0x2B, libc::termios2);
 const IOSSIOSPEED: libc::c_ulong = 0x80045402;
 
 #[cfg(target_os = "macos")]
-ioctl_write_ptr_bad!(iossiospeed, IOSSIOSPEED, libc::speed_t);
+ioctl_write_ptr_bad!(iossiospeedraw, IOSSIOSPEED, libc::speed_t);
 
 
 #[cfg(target_os = "macos")]
 pub fn iossiospeed(fd: RawFd, baud_rate: &libc::speed_t) -> Result<()> {
-    unsafe { raw::iossiospeed(fd, baud_rate) }
+    unsafe { iossiospeedraw(fd, baud_rate) }
         .map(|_| ())
         .map_err(|e| e.into())
 }

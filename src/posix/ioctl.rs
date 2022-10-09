@@ -1,7 +1,7 @@
 #[cfg(target_os = "macos")]
 use std::os::unix::prelude::RawFd;
 
-use nix::{ioctl_none_bad, libc, ioctl_read_bad, ioctl_write_ptr_bad, ioctl_read, ioctl_write_ptr};
+use nix::{ioctl_none_bad, libc, ioctl_read_bad, ioctl_write_ptr_bad, ioctl_read, ioctl_write_ptr, Result};
 
 
 ioctl_none_bad!(tiocexcl, libc::TIOCEXCL);

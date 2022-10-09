@@ -91,6 +91,7 @@ impl super::SerialPort for TTYPort {
             38_400 => BaudRate::B38400,
             57_600 => BaudRate::B57600,
             115_200 => BaudRate::B115200,
+            /*
             230_400 => BaudRate::B230400,
             460_800 => BaudRate::B460800, 
             500_000 => BaudRate::B500000,
@@ -104,6 +105,7 @@ impl super::SerialPort for TTYPort {
             3_000_000 => BaudRate::B3000000,
             3_500_000 => BaudRate::B3500000,
             4_000_000 => BaudRate::B4000000,
+            */
             _ => return Err(SerialError::LibraryError(format!("Baud rate {} is unsupported on NIX", self.settings.baud_rate)))
         };
 

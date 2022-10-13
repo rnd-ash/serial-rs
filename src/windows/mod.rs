@@ -185,14 +185,6 @@ impl super::SerialPort for COMPort {
                 dcb.Parity = ODDPARITY;
                 dcb.set_fParity(1);
             }
-            crate::Parity::Mark => {
-                dcb.Parity = MARKPARITY;
-                dcb.set_fParity(1);
-            }
-            crate::Parity::Space => {
-                dcb.Parity = SPACEPARITY;
-                dcb.set_fParity(1);
-            }
         }
 
         dcb.StopBits = match self.settings.stop_bits {

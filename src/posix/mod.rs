@@ -112,10 +112,6 @@ impl super::SerialPort for TTYPort {
             cfsetispeed(&mut orig_attr, baud)?;
             cfsetospeed(&mut orig_attr, baud)?;
         }
-        #[cfg(target_os="macos")]
-        {
-            ioctl::iossiospeed(self.fd, &(self.settings.baud_rate as libc::speed_t))?;
-        }
 
         orig_attr.control_flags |= match self.settings.byte_size {
             crate::ByteSize::Five => ControlFlags::CS5,
@@ -175,6 +171,11 @@ impl super::SerialPort for TTYPort {
         }
         orig_attr.control_chars[SpecialCharacterIndices::VTIME as usize] = vtime as u8;
         tcsetattr(self.fd, nix::sys::termios::SetArg::TCSANOW, &orig_attr)?;
+        
+        #[cfg(target_os="macos")]
+        {
+            ioctl::iossiospeed(self.fd, &(self.settings.baud_rate as libc::speed_t))?;
+        }
         Ok(())
     }
 

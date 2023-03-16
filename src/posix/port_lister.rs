@@ -24,17 +24,17 @@ fn get_paths(g: &str) -> Vec<PathBuf> {
 impl crate::PortScanner for TTYPortScanner {
     fn list_devices(&mut self) -> crate::SerialResult<Vec<crate::PortInfo>> {
         let mut res: Vec<PortInfo> = vec![];
-        let mut pat = get_paths("/dev/ttyS*").into_iter()
+        let mut pat: Vec<PathBuf> = get_paths("/dev/ttyS*").into_iter()
         .chain(get_paths("/dev/ttyUSB*"))
         .chain(get_paths("/dev/ttyXRUSB*"))
         .chain(get_paths("/dev/ttyACM*"))
         .chain(get_paths("/dev/ttyAMA*"))
         .chain(get_paths("/dev/rfcomm*"))
         .chain(get_paths("/dev/ttyAP*"))
-        .chain(get_paths("/dev/ttyGS*"));
-        #[cfg(macos)]
+        .chain(get_paths("/dev/ttyGS*")).collect();
+        #[cfg(target_os = "macos")]
         {
-            pat = pat.chain(get_paths("/dev/cu*")) // OSX
+            pat.append(&mut get_paths("/dev/cu*")); // OSX
         }
         for port in pat
         {

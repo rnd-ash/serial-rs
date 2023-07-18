@@ -3,9 +3,9 @@ name = "serial-rs"
 version = "0.2.0"
 edition = "2021"
 authors = ["Ashcon Mohseninia <ashconm@outlook.com>"]
-description = "A cross-platform rust serial RS232 library"
+description = "A cross-platform rust serial RS232 library with overlap IO support"
 readme = "README.md"
-repository = "https://github.com/rnd-ash/pyserial-rs"
+repository = "https://github.com/rnd-ash/serial-rs"
 keywords = ["serial", "modem", "serialport", "rs232"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,7 +15,6 @@ maintenance = { status = "actively-developed" }
 [package.metadata.docs.rs]
 all-features = true
 targets = ["x86_64-unknown-linux-gnu", "i686-pc-windows-msvc", "x86_64-apple-darwin"]
-
 
 [dependencies]
 glob="0.3.0"

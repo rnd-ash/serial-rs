@@ -408,7 +408,7 @@ impl std::io::Read for COMPort {
         let mut comstat: COMSTAT = unsafe { std::mem::zeroed() };
         return_win_op!(ClearCommError(self.handle, &mut flags, &mut comstat))?;
 
-        let to_read = if self.settings.read_timeout.is_none() {
+        let to_read = if self.settings.read_timeout.is_none() || !self.settings.blocking {
             std::cmp::min(comstat.cbInQue as usize, buf.len())
         } else {
             buf.len()

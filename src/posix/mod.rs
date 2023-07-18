@@ -22,7 +22,13 @@ pub struct TTYPort {
 impl TTYPort {
     /// Creates a new TTY port
     pub fn new(path: String, settings: Option<SerialPortSettings>) -> SerialResult<Self> {
-        let fd = nix::fcntl::open(Path::new(&path), OFlag::O_RDWR | OFlag::O_NOCTTY | OFlag::O_NONBLOCK, nix::sys::stat::Mode::empty())?;
+
+        let mut flags = OFlag::O_RDWR | OFlag::O_NOCTTY;
+        if !settings.unwrap_or_default().blocking {
+            flags |= OFlag::O_NONBLOCK
+        } 
+
+        let fd = nix::fcntl::open(Path::new(&path), flags, nix::sys::stat::Mode::empty())?;
 
         let mut port = TTYPort {
             fd,

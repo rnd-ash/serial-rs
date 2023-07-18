@@ -89,7 +89,8 @@ pub struct SerialPortSettings {
     read_timeout: Option<u128>,
     flow_control: FlowControl,
     write_timeout: Option<u128>,
-    inter_byte_timeout: Option<u128>
+    inter_byte_timeout: Option<u128>,
+    blocking: bool
 }
 
 impl Default for SerialPortSettings {
@@ -103,6 +104,7 @@ impl Default for SerialPortSettings {
             write_timeout: None,
             flow_control: FlowControl::None,
             inter_byte_timeout: None,
+            blocking: true
         }
     }
 }
@@ -142,6 +144,11 @@ impl SerialPortSettings {
 
     pub fn set_flow_control(mut self, method: FlowControl) -> Self {
         self.flow_control = method;
+        self
+    }
+
+    pub fn set_blocking(mut self, blocking: bool) -> Self {
+        self.blocking = blocking;
         self
     }
 }

@@ -7,6 +7,7 @@ description = "A cross-platform rust serial RS232 library with overlap IO suppor
 readme = "README.md"
 repository = "https://github.com/rnd-ash/serial-rs"
 keywords = ["serial", "modem", "serialport", "rs232"]
+license = "GPL-2.0-or-later"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [badges]

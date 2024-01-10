@@ -51,7 +51,7 @@ pub mod port_lister;
 /// Windows COM Port
 
 pub struct COMPort {
-    settings: SerialPortSettings,
+    pub settings: SerialPortSettings,
     handle: HANDLE,
     overlapped_read: OVERLAPPED,
     overlapped_write: OVERLAPPED,

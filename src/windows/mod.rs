@@ -133,6 +133,9 @@ impl COMPort {
 }
 
 impl super::SerialPort for COMPort {
+    fn setting(&mut self) -> &mut SerialPortSettings {
+        &mut self.settings
+    }
     fn reconfigure_port(&mut self) -> SerialResult<()> {
         // First set timeouts
         let mut timeouts: COMMTIMEOUTS = unsafe { std::mem::zeroed() };

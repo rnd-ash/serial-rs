@@ -51,6 +51,9 @@ impl TTYPort {
 }
 
 impl super::SerialPort for TTYPort {
+    fn setting(&mut self) -> &mut SerialPortSettings{
+        &mut self.settings
+    }
     fn reconfigure_port(&mut self) -> crate::SerialResult<()> {
         flock(self.fd, FlockArg::Unlock)?;
         let mut vmin: u128 = 0;

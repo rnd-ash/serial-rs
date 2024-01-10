@@ -235,6 +235,8 @@ impl PortInfo {
 
 /// Serial port trait
 pub trait SerialPort: Send + std::io::Write + std::io::Read {
+    /// Make the serial port Settings reconfigurable
+    fn setting(&mut self) -> &mut SerialPortSettings;
     /// Reconfigures an open port with the current settings
     fn reconfigure_port(&mut self) -> SerialResult<()>;
     /// Closes the port

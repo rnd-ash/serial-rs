@@ -51,7 +51,7 @@ pub mod port_lister;
 /// Windows COM Port
 
 pub struct COMPort {
-    pub settings: SerialPortSettings,
+    settings: SerialPortSettings,
     handle: HANDLE,
     overlapped_read: OVERLAPPED,
     overlapped_write: OVERLAPPED,
@@ -133,6 +133,9 @@ impl COMPort {
 }
 
 impl super::SerialPort for COMPort {
+    fn setting(&mut self) -> &mut SerialPortSettings {
+        &mut self.settings
+    }
     fn reconfigure_port(&mut self) -> SerialResult<()> {
         // First set timeouts
         let mut timeouts: COMMTIMEOUTS = unsafe { std::mem::zeroed() };
